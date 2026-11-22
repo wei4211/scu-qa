@@ -60,7 +60,7 @@
         {% for pass in range(2) %}
         <ul class="reel-set"{% if pass %} aria-hidden="true"{% endif %}>
           {% for photo in photos %}
-          <li class="reel-item"><img src="{{ url_for('static', filename=photo.file) }}" alt="{{ '' if pass else photo.alt }}" loading="lazy" decoding="async"></li>
+          <li class="reel-item" data-tag="{{ t.ai_tag }}"><img src="{{ url_for('static', filename=photo.file) }}" alt="{{ '' if pass else photo.alt }}" decoding="async"></li>
           {% else %}
           {% for n in range(1, 9) %}
           <li class="reel-item reel-placeholder" style="--hue: {{ 200 + n * 21 }}">

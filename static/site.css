@@ -64,7 +64,7 @@ a { color: inherit; }
   text-decoration: none;
 }
 
-.brand { gap: 12px; color: var(--text); font-size: .875rem; }
+.brand { gap: 12px; color: var(--text); font-size: .875rem; font-weight: 650; }
 .brand strong { color: var(--text); margin-inline-start: .35em; font-weight: 650; }
 
 .brand-icon, .avatar {
@@ -214,6 +214,22 @@ main {
   height: 100%;
   object-fit: cover;
   border-radius: 11px;
+}
+/* Small corner tag on every picture: the reel shows AI-made illustrations, not real campus photos. */
+.reel-item[data-tag] { position: relative; }
+.reel-item[data-tag]::after {
+  content: attr(data-tag);
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  background: rgb(30 36 80 / 52%);
+  backdrop-filter: blur(4px);
 }
 .reel-placeholder {
   display: grid;

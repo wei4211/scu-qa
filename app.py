@@ -31,13 +31,14 @@ def reel_photos() -> list[dict]:
     """Photos for the home-page reel: every image in static/photos, by file name.
 
     The alt text comes from the file name, so name files after what they show
-    (e.g. 「專題成果展.jpg」). The list repeats until it is long enough to loop
+    (e.g. 「專題成果展.jpg」); a leading number such as 「01_」 only sets the order
+    and is left out of the alt text. The list repeats until it is long enough to loop
     without a gap; an empty list makes the page show placeholders.
     """
     if not PHOTO_DIR.is_dir():
         return []
     photos = [
-        {"file": f"photos/{item.name}", "alt": item.stem.replace("_", " ").replace("-", " ")}
+        {"file": f"photos/{item.name}", "alt": re.sub(r"^\d+[_-]", "", item.stem).replace("_", " ").replace("-", " ")}
         for item in sorted(PHOTO_DIR.iterdir())
         if item.suffix.lower() in PHOTO_TYPES and not item.name.startswith(".")
     ]
