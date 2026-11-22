@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="{{ t.html_lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f8ff">
+  <title>{{ t.page_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='site.css', v='i18n-1') }}">
+  <script>window.UI = {{ js_text|tojson }};</script>
+  <script src="{{ url_for('static', filename='voice.js', v='i18n-1') }}" defer></script>
+  <script src="{{ url_for('static', filename='chat.js', v='i18n-1') }}" defer></script>
+</head>
+<body>
+  <div class="cursor-glow" aria-hidden="true"></div>
+  <div class="tech-backdrop" aria-hidden="true">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <g class="net-lines">
+        <path d="M80 640 230 560 360 690 520 610M230 560 300 430 470 470 520 610M1360 250 1210 330 1250 470 1090 520M1210 330 1100 230 960 300M1250 470 1380 560 1300 700 1140 660 1090 520M120 220 260 160 330 280 300 430M1140 660 1010 760"/>
+      </g>
+      <g class="net-nodes">
+        <circle cx="80" cy="640" r="3"/><circle cx="230" cy="560" r="4.5"/><circle cx="360" cy="690" r="3"/><circle cx="520" cy="610" r="3.5"/>
+        <circle cx="300" cy="430" r="3"/><circle cx="470" cy="470" r="4"/><circle cx="1360" cy="250" r="3"/><circle cx="1210" cy="330" r="4.5"/>
+        <circle cx="1250" cy="470" r="3.5"/><circle cx="1090" cy="520" r="3"/><circle cx="1100" cy="230" r="3"/><circle cx="960" cy="300" r="4"/>
+        <circle cx="1380" cy="560" r="3"/><circle cx="1300" cy="700" r="4"/><circle cx="1140" cy="660" r="3"/><circle cx="1010" cy="760" r="3.5"/>
+        <circle cx="120" cy="220" r="3.5"/><circle cx="260" cy="160" r="3"/><circle cx="330" cy="280" r="4"/>
+      </g>
+    </svg>
+  </div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="{{ url_for('static', filename='img/datascience-logo.png') }}" alt="Data Science" width="339" height="129">
+        <span class="brand-text">{{ t.brand }} <strong>{{ t.brand_strong }}</strong></span>
+      </a>
+      <nav class="top-links" aria-label="{{ t.nav_label }}">
+        <a class="social-link" href="https://www.instagram.com/scu_data_science/" target="_blank" rel="noopener noreferrer" aria-label="{{ 'SCU Data Science' if lang == 'en' else '東吳資科' }} Instagram{{ t.new_window }}" title="Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.9"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/></svg>
+        </a>
+        <a class="social-link" href="https://www.facebook.com/scubigdata" target="_blank" rel="noopener noreferrer" aria-label="{{ 'SCU Data Science' if lang == 'en' else '東吳資科' }} Facebook{{ t.new_window }}" title="Facebook">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.6 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.5-1.5h1.6V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.6V21z"/></svg>
+        </a>
+        <a class="social-link" href="https://www.youtube.com/channel/UCIeUlTiDK8ns-9-bFYDLi9Q" target="_blank" rel="noopener noreferrer" aria-label="{{ 'SCU Data Science' if lang == 'en' else '東吳資科' }} YouTube{{ t.new_window }}" title="YouTube">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.8" y="6" width="18.4" height="12" rx="3.6"/><path d="m10.3 9.4 4.6 2.6-4.6 2.6z" fill="currentColor"/></svg>
+        </a>
+        <a class="social-link" href="https://www.threads.com/@scu_data_science" target="_blank" rel="noopener noreferrer" aria-label="{{ 'SCU Data Science' if lang == 'en' else '東吳資科' }} Threads{{ t.new_window }}" title="Threads">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M16.2 11.3c-.5-2.4-2.2-3.6-4.3-3.6-2.6 0-4.2 1.9-4.2 4.4s1.6 4.3 4.3 4.3c2.2 0 3.7-1.3 3.7-3 0-2.4-3-2.9-5-2"/><path d="M19.6 12.2c0 4.8-3 7.8-7.4 7.8C7.4 20 4.4 16.8 4.4 12S7.4 4 12.2 4c3.2 0 5.5 1.5 6.6 4.3"/></svg>
+        </a>
+        <a class="site-link" href="https://web-ch.scu.edu.tw/datascience" target="_blank" rel="noopener noreferrer">{{ t.site_link }} <span aria-hidden="true">↗</span></a>
+        <div class="lang-switch" role="group" aria-label="{{ t.lang_label }}">
+          <a href="?lang=zh" lang="zh-Hant" hreflang="zh-Hant"{% if lang == 'zh' %} aria-current="true"{% endif %}>中文</a>
+          <a href="?lang=en" lang="en" hreflang="en"{% if lang == 'en' %} aria-current="true"{% endif %}>EN</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="photo-reel" aria-label="{{ t.reel_label }}">
+      <div class="reel-track" style="--reel-items: {{ photos|length or 8 }}">
+        {% for pass in range(2) %}
+        <ul class="reel-set"{% if pass %} aria-hidden="true"{% endif %}>
+          {% for photo in photos %}
+          <li class="reel-item"><img src="{{ url_for('static', filename=photo.file) }}" alt="{{ '' if pass else photo.alt }}" loading="lazy" decoding="async"></li>
+          {% else %}
+          {% for n in range(1, 9) %}
+          <li class="reel-item reel-placeholder" style="--hue: {{ 200 + n * 21 }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v10.5H4z"/><circle cx="12" cy="13" r="3.4"/></svg>
+            <span>{{ t.photo }} {{ n }}</span>
+          </li>
+          {% endfor %}
+          {% endfor %}
+        </ul>
+        {% endfor %}
+      </div>
+    </section>
+    <div class="side-decor" aria-hidden="true">
+      <div class="bot bot-left">
+        <div class="bot-bubble" data-phrases="{{ t.bubble_left|join('|') }}"><span>{{ t.bubble_left[0] }}</span></div>
+        <svg class="bot-svg" viewBox="0 0 400 640">
+          <defs>
+            <linearGradient id="neon-left" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--neon-a)"/><stop offset="1" stop-color="var(--neon-b)"/></linearGradient>
+            <radialGradient id="core-left"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="var(--neon-b)"/><stop offset="1" stop-color="var(--neon-a)" stop-opacity=".1"/></radialGradient>
+            <radialGradient id="jet-left" cx=".5" cy="0" r="1"><stop offset="0" stop-color="var(--neon-b)" stop-opacity=".8"/><stop offset="1" stop-color="var(--neon-b)" stop-opacity="0"/></radialGradient>
+            <linearGradient id="beam-left" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="var(--neon-b)" stop-opacity=".4"/><stop offset="1" stop-color="var(--neon-b)" stop-opacity="0"/></linearGradient>
+            <clipPath id="visor-clip-left"><rect x="128" y="100" width="144" height="72" rx="36"/></clipPath>
+          </defs>
+          <g class="bot-floor"><ellipse cx="200" cy="616" rx="96" ry="13"/><ellipse cx="200" cy="616" rx="60" ry="8"/></g>
+          <g class="bot-body" style="--neon: url(#neon-left)">
+            <ellipse class="bot-halo" cx="200" cy="136" rx="132" ry="132"/>
+            <ellipse class="bot-jet" cx="200" cy="500" rx="34" ry="62" fill="url(#jet-left)"/>
+            <circle class="spark" cx="176" cy="520" r="3" style="--d: 0s"/><circle class="spark" cx="224" cy="528" r="2.5" style="--d: -0.9s"/><circle class="spark" cx="200" cy="540" r="3.5" style="--d: -1.7s"/><circle class="spark" cx="188" cy="530" r="2" style="--d: -2.4s"/><circle class="spark" cx="214" cy="516" r="2" style="--d: -0.4s"/>
+            <g class="bot-arm bot-arm-back"><g class="bot-tube "><g class="tube-edge"><line x1="118" y1="268" x2="98" y2="350"/><line x1="98" y1="350" x2="104" y2="420"/></g><g class="tube-core"><line x1="118" y1="268" x2="98" y2="350"/><line x1="98" y1="350" x2="104" y2="420"/></g></g><circle class="bot-joint" cx="98" cy="350" r="9"/><circle class="bot-hand" cx="106" cy="432" r="17"/></g>
+            <path class="bot-line" d="M152 386q48-14 96 0l-14 82q-34 22-68 0z"/><path class="bot-flow" d="M152 386q48-14 96 0l-14 82q-34 22-68 0z"/>
+            <rect class="bot-line" x="162" y="368" width="76" height="24" rx="12"/>
+            <path class="bot-line" d="M126 252q74-34 148 0l-10 104q-64 40-128 0z"/><path class="bot-flow" d="M126 252q74-34 148 0l-10 104q-64 40-128 0z" style="--d: -1.2s"/>
+            <g class="bot-circuit"><path d="M182 304h-26l-12-14h-10M218 304h26l12-14h10M200 334v18l-14 10M200 274v-14l16-8"/><circle cx="134" cy="290" r="3.5"/><circle cx="266" cy="290" r="3.5"/><circle cx="186" cy="362" r="3.5"/><circle cx="216" cy="252" r="3.5"/></g>
+            <circle class="bot-core-ring" cx="200" cy="304" r="30"/>
+            <circle class="bot-core" cx="200" cy="304" r="16" fill="url(#core-left)"/>
+            <circle class="bot-line" cx="118" cy="262" r="24"/>
+            <rect class="bot-line" x="184" y="216" width="32" height="32" rx="10"/>
+            <g class="bot-head">
+              <ellipse class="bot-line" cx="108" cy="138" rx="12" ry="28"/><ellipse class="bot-line" cx="292" cy="138" rx="12" ry="28"/>
+              <path class="bot-line bot-skull" d="M200 46h0a88 88 0 0 1 88 88v4a84 84 0 0 1-84 84h-8a84 84 0 0 1-84-84v-4a88 88 0 0 1 88-88z"/>
+              <g class="bot-grid"><ellipse cx="200" cy="134" rx="86" ry="30"/><ellipse cx="200" cy="134" rx="86" ry="62"/><ellipse cx="200" cy="134" rx="30" ry="86"/><ellipse cx="200" cy="134" rx="60" ry="86"/><line x1="200" y1="48" x2="200" y2="220"/></g>
+              <path class="bot-flow" d="M200 46h0a88 88 0 0 1 88 88v4a84 84 0 0 1-84 84h-8a84 84 0 0 1-84-84v-4a88 88 0 0 1 88-88z" style="--d: -2.4s"/>
+              <rect class="bot-visor" x="128" y="100" width="144" height="72" rx="36"/>
+              <g clip-path="url(#visor-clip-left)"><rect class="bot-scan" x="88" y="100" width="44" height="72"/></g>
+              <g class="bot-eyes"><rect x="160" y="122" width="20" height="28" rx="10"/><rect x="220" y="122" width="20" height="28" rx="10"/></g>
+              <path class="bot-smile" d="M186 158q14 9 28 0"/>
+              <line class="bot-antenna" x1="200" y1="46" x2="200" y2="20"/><circle class="bot-beacon" cx="200" cy="16" r="7"/>
+            </g>
+            <g class="bot-arm bot-arm-front">
+              <polygon class="bot-beam" points="334,238 304,224 388,224" fill="url(#beam-left)"/>
+              <rect class="bot-holo" x="300" y="148" width="92" height="76" rx="12"/>
+              <rect class="holo-bar" x="312" y="190" width="11" height="22" rx="3" style="--d: 0.00s"/><rect class="holo-bar" x="330" y="174" width="11" height="38" rx="3" style="--d: 0.25s"/><rect class="holo-bar" x="348" y="182" width="11" height="30" rx="3" style="--d: 0.50s"/><rect class="holo-bar" x="366" y="164" width="11" height="48" rx="3" style="--d: 0.75s"/>
+              <g class="bot-tube "><g class="tube-edge"><line x1="282" y1="268" x2="328" y2="306"/><line x1="328" y1="306" x2="336" y2="250"/></g><g class="tube-core"><line x1="282" y1="268" x2="328" y2="306"/><line x1="328" y1="306" x2="336" y2="250"/></g></g>
+              <circle class="bot-joint" cx="328" cy="306" r="9"/><circle class="bot-hand" cx="336" cy="240" r="16"/>
+            </g>
+            <circle class="bot-line" cx="282" cy="262" r="24"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bot bot-right">
+        <div class="bot-bubble" data-phrases="{{ t.bubble_right|join('|') }}"><span>{{ t.bubble_right[0] }}</span></div>
+        <svg class="bot-svg" viewBox="0 0 400 640">
+          <defs>
+            <linearGradient id="neon-right" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--neon-a)"/><stop offset="1" stop-color="var(--neon-b)"/></linearGradient>
+            <radialGradient id="core-right"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="var(--neon-b)"/><stop offset="1" stop-color="var(--neon-a)" stop-opacity=".1"/></radialGradient>
+            <radialGradient id="jet-right" cx=".5" cy="0" r="1"><stop offset="0" stop-color="var(--neon-b)" stop-opacity=".8"/><stop offset="1" stop-color="var(--neon-b)" stop-opacity="0"/></radialGradient>
+            <linearGradient id="beam-right" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="var(--neon-b)" stop-opacity=".4"/><stop offset="1" stop-color="var(--neon-b)" stop-opacity="0"/></linearGradient>
+            <clipPath id="visor-clip-right"><rect x="128" y="100" width="144" height="72" rx="36"/></clipPath>
+          </defs>
+          <g class="bot-floor"><ellipse cx="200" cy="616" rx="96" ry="13"/><ellipse cx="200" cy="616" rx="60" ry="8"/></g>
+          <g class="bot-body" style="--neon: url(#neon-right)">
+            <ellipse class="bot-halo" cx="200" cy="136" rx="132" ry="132"/>
+            <ellipse class="bot-jet" cx="200" cy="500" rx="34" ry="62" fill="url(#jet-right)"/>
+            <circle class="spark" cx="176" cy="520" r="3" style="--d: 0s"/><circle class="spark" cx="224" cy="528" r="2.5" style="--d: -0.9s"/><circle class="spark" cx="200" cy="540" r="3.5" style="--d: -1.7s"/><circle class="spark" cx="188" cy="530" r="2" style="--d: -2.4s"/><circle class="spark" cx="214" cy="516" r="2" style="--d: -0.4s"/>
+            <g class="bot-arm bot-arm-back"><g class="bot-tube "><g class="tube-edge"><line x1="118" y1="268" x2="98" y2="350"/><line x1="98" y1="350" x2="104" y2="420"/></g><g class="tube-core"><line x1="118" y1="268" x2="98" y2="350"/><line x1="98" y1="350" x2="104" y2="420"/></g></g><circle class="bot-joint" cx="98" cy="350" r="9"/><circle class="bot-hand" cx="106" cy="432" r="17"/></g>
+            <path class="bot-line" d="M152 386q48-14 96 0l-14 82q-34 22-68 0z"/><path class="bot-flow" d="M152 386q48-14 96 0l-14 82q-34 22-68 0z"/>
+            <rect class="bot-line" x="162" y="368" width="76" height="24" rx="12"/>
+            <path class="bot-line" d="M126 252q74-34 148 0l-10 104q-64 40-128 0z"/><path class="bot-flow" d="M126 252q74-34 148 0l-10 104q-64 40-128 0z" style="--d: -1.2s"/>
+            <g class="bot-circuit"><path d="M182 304h-26l-12-14h-10M218 304h26l12-14h10M200 334v18l-14 10M200 274v-14l16-8"/><circle cx="134" cy="290" r="3.5"/><circle cx="266" cy="290" r="3.5"/><circle cx="186" cy="362" r="3.5"/><circle cx="216" cy="252" r="3.5"/></g>
+            <circle class="bot-core-ring" cx="200" cy="304" r="30"/>
+            <circle class="bot-core" cx="200" cy="304" r="16" fill="url(#core-right)"/>
+            <circle class="bot-line" cx="118" cy="262" r="24"/>
+            <rect class="bot-line" x="184" y="216" width="32" height="32" rx="10"/>
+            <g class="bot-head">
+              <ellipse class="bot-line" cx="108" cy="138" rx="12" ry="28"/><ellipse class="bot-line" cx="292" cy="138" rx="12" ry="28"/>
+              <path class="bot-line bot-skull" d="M200 46h0a88 88 0 0 1 88 88v4a84 84 0 0 1-84 84h-8a84 84 0 0 1-84-84v-4a88 88 0 0 1 88-88z"/>
+              <g class="bot-grid"><ellipse cx="200" cy="134" rx="86" ry="30"/><ellipse cx="200" cy="134" rx="86" ry="62"/><ellipse cx="200" cy="134" rx="30" ry="86"/><ellipse cx="200" cy="134" rx="60" ry="86"/><line x1="200" y1="48" x2="200" y2="220"/></g>
+              <path class="bot-flow" d="M200 46h0a88 88 0 0 1 88 88v4a84 84 0 0 1-84 84h-8a84 84 0 0 1-84-84v-4a88 88 0 0 1 88-88z" style="--d: -2.4s"/>
+              <rect class="bot-visor" x="128" y="100" width="144" height="72" rx="36"/>
+              <g clip-path="url(#visor-clip-right)"><rect class="bot-scan" x="88" y="100" width="44" height="72"/></g>
+              <g class="bot-eyes"><rect x="160" y="122" width="20" height="28" rx="10"/><rect x="220" y="122" width="20" height="28" rx="10"/></g>
+              <path class="bot-smile" d="M186 158q14 9 28 0"/>
+              <line class="bot-antenna" x1="200" y1="46" x2="200" y2="20"/><circle class="bot-beacon" cx="200" cy="16" r="7"/>
+            </g>
+            <g class="bot-arm bot-arm-front">
+              <polygon class="bot-beam" points="334,238 304,224 388,224" fill="url(#beam-right)"/>
+              <rect class="bot-holo" x="300" y="148" width="92" height="76" rx="12"/>
+              <g class="holo-net"><line x1="318" y1="176" x2="346" y2="166"/><line x1="318" y1="176" x2="346" y2="187"/><line x1="318" y1="176" x2="346" y2="208"/><line x1="318" y1="198" x2="346" y2="166"/><line x1="318" y1="198" x2="346" y2="187"/><line x1="318" y1="198" x2="346" y2="208"/><line x1="346" y1="166" x2="374" y2="180"/><line x1="346" y1="187" x2="374" y2="180"/><line x1="346" y1="187" x2="374" y2="202"/><line x1="346" y1="208" x2="374" y2="202"/><line x1="346" y1="166" x2="374" y2="202"/><line x1="346" y1="208" x2="374" y2="180"/><circle cx="318" cy="176" r="4.5" style="--d: 0.00s"/><circle cx="318" cy="198" r="4.5" style="--d: 0.22s"/><circle cx="346" cy="166" r="4.5" style="--d: 0.44s"/><circle cx="346" cy="187" r="4.5" style="--d: 0.66s"/><circle cx="346" cy="208" r="4.5" style="--d: 0.88s"/><circle cx="374" cy="180" r="4.5" style="--d: 1.10s"/><circle cx="374" cy="202" r="4.5" style="--d: 1.32s"/></g>
+              <g class="bot-tube "><g class="tube-edge"><line x1="282" y1="268" x2="328" y2="306"/><line x1="328" y1="306" x2="336" y2="250"/></g><g class="tube-core"><line x1="282" y1="268" x2="328" y2="306"/><line x1="328" y1="306" x2="336" y2="250"/></g></g>
+              <circle class="bot-joint" cx="328" cy="306" r="9"/><circle class="bot-hand" cx="336" cy="240" r="16"/>
+            </g>
+            <circle class="bot-line" cx="282" cy="262" r="24"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <section class="chat" aria-labelledby="page-title" data-voice-enabled="{{ 'false' if preview else 'true' }}">
+      <div class="hero">
+        <div class="hero-copy">
+          <h1 id="page-title"><strong>{{ t.title_small }}</strong><span>{{ t.title_big }}</span></h1>
+          <p class="greeting"><span class="sr-only">{{ t.greeting }}</span><span class="typed-ghost" aria-hidden="true">{{ t.greeting }}</span><span class="typed" aria-hidden="true">{{ t.greeting }}</span></p>
+        </div>
+      </div>
+      {% if preview %}
+      <p class="mode-note">{{ t.preview_note }}</p>
+      {% endif %}
+
+      <template id="assistant-avatar">
+        <span class="avatar" aria-hidden="true"><span class="robot"><span class="robot-visor"></span></span></span>
+      </template>
+      <div id="messages" role="log" aria-live="polite" aria-label="{{ t.messages_label }}" tabindex="0"></div>
+
+      <form id="question-form">
+        <label class="sr-only" for="question">{{ t.question_label }}</label>
+        <div class="compose">
+          <textarea id="question" rows="1" placeholder="{{ t.placeholder }}" maxlength="400" required></textarea>
+          <div class="actions">
+            <button id="voice-button" class="icon-button voice-button" type="button" aria-label="{{ t.voice_start }}" aria-pressed="false" title="{{ t.voice_title }}">
+              <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11v1a7 7 0 0 0 14 0v-1M12 19v3m-3 0h6"/></svg>
+              <svg class="stop-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            </button>
+            <button id="send-button" class="icon-button send-button" type="submit" aria-label="{{ t.send }}" title="{{ t.send }}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </form>
+      <div class="examples topics" role="group" aria-label="{{ t.topics_label }}">
+        {% for topic in topics %}
+        <button type="button" class="topic" data-question="{{ topic.question }}" style="--tone: {{ topic.tone }}">
+          <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">{{ topic.icon|safe }}</svg></span>
+          <span class="topic-body"><strong>{{ topic.title }}</strong><span>{{ topic.desc }}</span></span>
+          <span class="example-arrow" aria-hidden="true">↗</span>
+        </button>
+        {% endfor %}
+      </div>
+      {% if stats %}
+      <section class="stats" aria-labelledby="stats-title">
+        <h2 id="stats-title" class="stats-title"><span>{{ t.stats_title }}</span></h2>
+        <ul class="stats-grid">
+          {% for item in stats %}
+          <li class="stat">
+            <span class="stat-value"><span class="stat-number" data-count="{{ item.value }}">{{ item.value }}</span>{% if item.unit %}<small>{{ item.unit }}</small>{% endif %}</span>
+            <span class="stat-label">{{ item.label }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+      <p class="home-note">{{ t.home_note }}</p>
+      <div class="voice-feedback">
+        <p id="voice-status" role="status"></p>
+        <span id="voice-timer" aria-hidden="true" hidden></span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
