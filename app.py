@@ -56,7 +56,8 @@ def home_stats(sources) -> dict[str, list[dict]]:
     }
     projects = {item.title for item in sources if item.page == "學生專題影音"}
     credit_pages = sorted(
-        (item for item in sources if item.page == "必選修科目表" and item.title.endswith("畢業學分")),
+        # The home page speaks to prospective undergraduates, so show the 學士班 total.
+        (item for item in sources if item.page == "必選修科目表" and "學士班｜" in item.title and item.title.endswith("畢業學分")),
         key=lambda item: item.title,
     )
     credits = re.search(r"共計 (\d+)", credit_pages[-1].text) if credit_pages else None

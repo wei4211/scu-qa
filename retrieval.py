@@ -13,6 +13,7 @@ INDEX_DIR = Path(__file__).resolve().parent / ".chroma"
 LIST_WORDS = ("有哪些", "有誰", "哪幾", "列出", "所有", "全部", "名單", "幾位", "幾個")
 GENERIC_TRIGRAMS = {"資料科", "料科學", "學年度", "必修科", "選修科", "修科目", "哪些課", "的課程"}
 COURSE_YEAR = re.compile(r"(\d{3})學年度入學")
+COURSE_PROGRAM = re.compile(r"(學士班|碩士班|碩士在職專班)｜\d{3}學年度入學")
 LIST_PAGES = {"跨域實驗室": ("實驗室",), "專任師資": ("老師", "師資", "教授")}
 
 
@@ -112,10 +113,24 @@ class VectorSearch:
         except Exception:
             pass  # The first question retries and reports the failure to the user.
 
-    def _course_years(self, question: str) -> set[str]:
+    @staticmethod
+    def _course_programs(question: str) -> set[str]:
+        """學制 the question is about; 學士班 unless it names a graduate programme (the site's main audience)."""
+        programs = set()
+        if re.search(r"在職|碩專|專班", question):
+            programs.add("碩士在職專班")
+        if "碩士班" in question or (not programs and re.search(r"碩士|研究所|碩[一二]", question)):
+            programs.add("碩士班")
+        if re.search(r"學士|大學部|大[一二三四]", question):
+            programs.add("學士班")
+        return programs or {"學士班"}
+
+    def _course_years(self, question: str, programs: set[str] | None = None) -> set[str]:
         """Course-table years to keep: those named in the question, else the latest one."""
         available = {
-            match.group(1) for item in self.sources.values() if (match := COURSE_YEAR.search(item.title))
+            match.group(1) for item in self.sources.values()
+            if (match := COURSE_YEAR.search(item.title))
+            and (programs is None or (found := COURSE_PROGRAM.search(item.title)) and found.group(1) in programs)
         }
         asked = set(re.findall(r"(1\d\d)\s*(?:學年|年入學|級)", question)) & available
         return asked or ({max(available)} if available else set())
@@ -130,15 +145,20 @@ class VectorSearch:
         collection = self._get_collection()
         result = collection.query(
             query_embeddings=self._embeddings([question]),
-            # Each course-table passage exists once per 入學年度; fetch extra so other years can be dropped.
-            n_results=min(limit * 5, len(self.sources)),
+            # Each course-table passage exists once per 學制 and 入學年度; fetch extra so the others can be dropped.
+            n_results=min(limit * 8, len(self.sources)),
             include=[],
         )
-        years = self._course_years(question)
+        programs = self._course_programs(question)
+        years = self._course_years(question, programs)
 
         def wanted(key):
-            match = COURSE_YEAR.search(self.sources[key].title)
-            return match is None or match.group(1) in years
+            title = self.sources[key].title
+            match = COURSE_YEAR.search(title)
+            if match is None:
+                return True
+            program = COURSE_PROGRAM.search(title)
+            return match.group(1) in years and (program is None or program.group(1) in programs)
 
         named = [item.id for item in self.sources.values() if any(name in question for name in item.names)]
         vector = [key for key in result["ids"][0] if key in self.sources and wanted(key)]
