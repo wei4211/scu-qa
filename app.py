@@ -1,8 +1,10 @@
 """Flask entry point for the department Q&A interface."""
 
+import json
 import os
 import re
 import threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -13,6 +15,10 @@ from transcription import AUDIO_FORMATS, MAX_AUDIO_BYTES, transcribe
 from ui_text import ERRORS, SCRIPT_TEXT, STAT_LABELS, TEXT, pick_lang, topics
 
 PHOTO_DIR = Path(__file__).with_name("static") / "photos"
+# 👍/👎 ratings on answers, one JSON object per line; kept out of git because it holds visitors' questions.
+FEEDBACK_FILE = Path(__file__).with_name("feedback") / "feedback.jsonl"
+TAIPEI = timezone(timedelta(hours=8))
+feedback_lock = threading.Lock()
 PHOTO_TYPES = {".jpg", ".jpeg", ".png", ".webp"}
 REEL_MIN_ITEMS = 8
 MAX_HISTORY_TURNS = 3
@@ -78,6 +84,13 @@ def home_stats(sources) -> dict[str, list[dict]]:
     return result
 
 
+def save_feedback(record: dict, path: Path = FEEDBACK_FILE) -> None:
+    path.parent.mkdir(exist_ok=True)
+    line = json.dumps(record, ensure_ascii=False) + "\n"
+    with feedback_lock, path.open("a", encoding="utf-8") as file:
+        file.write(line)
+
+
 def request_lang() -> str:
     """The visitor's language: ?lang= on the page, the JSON body or form on the API, else the saved cookie."""
     body = request.get_json(silent=True) if request.is_json else None
@@ -85,7 +98,7 @@ def request_lang() -> str:
     return pick_lang(request.args.get("lang") or from_body or request.form.get("lang") or request.cookies.get("lang"))
 
 
-def create_app(assistant=None):
+def create_app(assistant=None, feedback_file: Path = FEEDBACK_FILE):
     app = Flask(__name__)
     app.request_class = ChatRequest
     app.config["MAX_CONTENT_LENGTH"] = 32768
@@ -139,6 +152,33 @@ def create_app(assistant=None):
         except Exception as error:
             app.logger.warning("Question processing failed (%s)", type(error).__name__)
             return jsonify(error=errors["answer_failed"]), 503
+
+    @app.post("/api/feedback")
+    def feedback():
+        data = request.get_json(silent=True)
+        errors = ERRORS[request_lang()]
+        if not isinstance(data, dict):
+            return jsonify(error=errors["feedback_format"]), 400
+        question, answer, rating = data.get("question"), data.get("answer"), data.get("rating")
+        sources = data.get("sources", [])
+        if (
+            rating not in ("up", "down")
+            or not isinstance(question, str) or not 1 <= len(question.strip()) <= 400
+            or not isinstance(answer, str) or not 1 <= len(answer.strip()) <= 4000
+            or not isinstance(sources, list) or len(sources) > 4
+            or not all(isinstance(item, str) and len(item) <= 200 for item in sources)
+        ):
+            return jsonify(error=errors["feedback_format"]), 400
+        # No IP address or cookie is stored: only what was asked, what was answered and the rating.
+        save_feedback({
+            "time": datetime.now(TAIPEI).isoformat(timespec="seconds"),
+            "lang": request_lang(),
+            "rating": rating,
+            "question": question.strip(),
+            "answer": answer.strip(),
+            "sources": sources,
+        }, feedback_file)
+        return jsonify(ok=True)
 
     @app.post("/api/transcribe")
     def voice():

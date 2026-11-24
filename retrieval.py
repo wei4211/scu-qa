@@ -10,11 +10,11 @@ from sources import Source
 EMBEDDING_MODEL = "text-embedding-3-small"
 INDEX_DIR = Path(__file__).resolve().parent / ".chroma"
 # "List all labs / teachers" needs every passage of that page, not just the top vector hits.
-LIST_WORDS = ("有哪些", "有誰", "哪幾", "列出", "所有", "全部", "名單", "幾位", "幾個")
+LIST_WORDS = ("哪些", "有誰", "哪幾", "列出", "所有", "全部", "名單", "幾位", "幾個")
 GENERIC_TRIGRAMS = {"資料科", "料科學", "學年度", "必修科", "選修科", "修科目", "哪些課", "的課程"}
 COURSE_YEAR = re.compile(r"(\d{3})學年度入學")
 COURSE_PROGRAM = re.compile(r"(學士班|碩士班|碩士在職專班)｜\d{3}學年度入學")
-LIST_PAGES = {"跨域實驗室": ("實驗室",), "專任師資": ("老師", "師資", "教授")}
+LIST_PAGES = {"跨域實驗室": ("實驗室",), "專任師資": ("老師", "師資", "教授"), "競賽成果": ("競賽", "比賽", "得獎")}
 
 
 def terms(text: str) -> set[str]:

@@ -592,6 +592,24 @@ body:has(.chat.has-messages) main {
 .pending p { color: var(--muted); }
 .pending .avatar { animation: pulse 1.4s ease-in-out infinite alternate; }
 .error p { color: #9a234a; }
+.feedback { display: flex; align-items: center; gap: 6px; margin-top: 12px; color: var(--muted); font-size: .8125rem; }
+.feedback span { margin-right: 4px; }
+.feedback button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #d3dcf2;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 72%);
+  font-size: .9375rem;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.feedback button:not(:disabled):hover { border-color: #8fa2e6; transform: translateY(-1px); }
+.feedback button:disabled { cursor: default; opacity: .45; }
+.feedback button.chosen { opacity: 1; border-color: #5b6fd6; background: #e8edff; }
 .follow-ups { margin-top: 12px; }
 .follow-ups button {
   border-color: #c9d5f0;

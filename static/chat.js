@@ -127,6 +127,47 @@ function message(text, question = false) {
   return { article, body, paragraph };
 }
 
+// "Was this answer helpful?" with 👍 / 👎; one rating per answer.
+function feedbackBar(question, result) {
+  const bar = document.createElement("div");
+  bar.className = "feedback";
+  bar.setAttribute("role", "group");
+  bar.setAttribute("aria-label", UI.feedback_ask);
+  const label = document.createElement("span");
+  label.textContent = UI.feedback_ask;
+  bar.append(label);
+  for (const [rating, icon, name] of [["up", "👍", UI.feedback_up], ["down", "👎", UI.feedback_down]]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = icon;
+    button.title = name;
+    button.setAttribute("aria-label", name);
+    button.addEventListener("click", async () => {
+      for (const other of bar.querySelectorAll("button")) other.disabled = true;
+      button.classList.add("chosen");
+      try {
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question, rating, lang: UI.lang,
+            answer: Array.from(result.answer).slice(0, 4000).join(""),
+            sources: result.links.map(item => Array.from(item.title).slice(0, 200).join("")).slice(0, 4),
+          }),
+        });
+        if (!response.ok) throw new Error();
+        label.textContent = UI.feedback_thanks;
+      } catch {
+        label.textContent = UI.feedback_failed;
+        button.classList.remove("chosen");
+        for (const other of bar.querySelectorAll("button")) other.disabled = false;
+      }
+    });
+    bar.append(button);
+  }
+  return bar;
+}
+
 function askSuggested(question) {
   if (send.disabled) return;
   input.value = question;
@@ -182,6 +223,7 @@ form.addEventListener("submit", async event => {
       link.rel = "noopener noreferrer";
       reply.body.append(link);
     }
+    reply.body.append(feedbackBar(question, result));
     if (result.follow_ups?.length) {
       const suggestions = document.createElement("div");
       suggestions.className = "follow-ups";

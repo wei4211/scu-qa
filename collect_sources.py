@@ -15,6 +15,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from course_tables import PROGRAMS, course_passages
+from tuition import SOURCE_PAGE as TUITION_PAGE, tuition_passages
 from sources import DATA_FILE
 
 SITE = "https://web-ch.scu.edu.tw"
@@ -31,11 +32,43 @@ PAGES = (
     ("畢業出路", "/datascience/web_page/16196", "article"),
     ("大學申請入學", "/datascience/web_page/16142", "article"),
     ("系辦聯絡資訊", "/datascience", "footer"),
+    # 認識學系
+    ("學系介紹", "/datascience/web_page/16060", "article"),
+    ("辦學理念", "/datascience/web_page/16153", "article"),
+    ("課程資訊", "/datascience/web_page/16063", "article"),
+    ("兼任師資", "/datascience/web_page/16165", "article"),
+    ("講座教授", "/datascience/teacher_resume/16160", "table"),
+    # 招生與修課
+    ("大學繁星推薦", "/datascience/web_page/16143", "article"),
+    ("學士班常見問答", "/datascience/faq/16227", "faq"),
+    ("雙主修", "/datascience/web_page/16213", "article"),
+    ("輔系", "/datascience/web_page/16214", "article"),
+    ("專題實作修課規定", "/datascience/web_page/16215", "article"),
+    ("專題實作常見問答", "/datascience/faq/16224", "faq"),
+    ("企業實習時程", "/datascience/web_page/16232", "table"),
+    ("企業實習常見問答", "/datascience/faq/16235", "faq"),
+    ("碩士班常見問答", "/datascience/faq/16249", "faq"),
+    ("碩士在職專班常見問答", "/datascience/faq/16255", "faq"),
+    # 學習資源與學生生活
+    ("獎助學金", "/datascience/web_page/16194", "article"),
+    ("競賽成果", "/datascience/web_page/16200", "article"),
+    ("研究設備", "/datascience/web_page/16203", "article"),
+    ("智慧創新AI學習中心", "/datascience/web_page/16786", "article"),
+    ("NVIDIA證照培訓", "/datascience/web_page/16788", "article"),
+    ("XR虛實融合學習教室", "/datascience/web_page/16780", "article"),
+    ("校園生活", "/datascience/web_page/16197", "article"),
+    ("國際交流", "/datascience/web_page/16305", "article"),
+    ("赴外交換", "/datascience/web_page/16201", "article"),
+    ("交換學生心得", "/datascience/web_page/16202", "article"),
+    ("系友專區", "/datascience/web_page/16167", "article"),
+    ("系友訪談", "/datascience/web_page/16181", "table"),
 )
 COURSE_PAGE = "必選修科目表"
 # Department page that links each 學制's yearly course tables (used as the passages' source link).
 COURSE_LINK_PAGES = {"必選修科目表": "學士班", "碩士班必選修科目表": "碩士班", "碩士在職專班必選修科目表": "碩士在職專班"}
 COURSE_DIR = DATA_FILE.parent / "必選修科目表"
+# The university's 學雜費收費標準一覽表; keep only the latest year's PDF here, e.g. 115學年度.pdf.
+TUITION_DIR = DATA_FILE.parent / "學雜費"
 HEADINGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 GENERIC_LINK_TEXT = ("連結", "link", "點此", "這裡", "下載")
 
@@ -75,6 +108,25 @@ def extract(body, kind, page_url):
             answer = panel.select_one(".panel-body #article") or panel.select_one(".panel-body")
             if title and answer and clean(answer):
                 yield clean(title), clean(answer), [], []
+        return
+
+    if kind == "table":
+        # Pages laid out as tables (timelines, testimonials, name lists): one line per row.
+        # A heading above a table (e.g. the months of the internship timeline) becomes its own line.
+        rows = []
+        for node in body.find_all([*HEADINGS, "tr"]):
+            if node.name != "tr":
+                if not node.find_parent("tr") and clean(node):
+                    rows.append(f"【{clean(node)}】")
+                continue
+            cells = [clean(cell) for cell in node.find_all(["td", "th"], recursive=False)]
+            line = "｜".join(cell for cell in cells if cell)
+            if line and line not in rows:
+                rows.append(line)
+        if rows:
+            # Name the passage after the page's first heading, e.g. 「系友訪談｜系友見證」.
+            first = rows[0][1:-1] if rows[0].startswith("【") else ""
+            yield first, "\n".join(rows), [], []
         return
 
     if kind == "footer":
@@ -180,6 +232,16 @@ def collect():
                 "url": url, "text": text, "names": [], "links": [],
             }
         print(f"{program} {year}學年度（{path.name}）：{len(passages)} 段，{check}")
+    for pdf in sorted(TUITION_DIR.glob("*學年度.pdf")):
+        year = pdf.stem[:3]
+        passages = tuition_passages(year, pdf.read_bytes())
+        for section, text in passages:
+            key = sha256(f"tuition\n{year}\n{section}\n{text}".encode()).hexdigest()[:20]
+            records[key] = {
+                "id": key, "page": "學雜費", "title": section,
+                "url": TUITION_PAGE, "text": text, "names": [], "links": [],
+            }
+        print(f"學雜費 {year}學年度（{pdf.name}）：{len(passages)} 段")
     temp = DATA_FILE.with_suffix(".tmp")
     temp.write_text(json.dumps(list(records.values()), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     temp.replace(DATA_FILE)
