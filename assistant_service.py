@@ -7,8 +7,9 @@ from retrieval import VectorSearch, preview_search
 from sources import Source, load_sources
 
 MODEL = "gpt-6-luna"
-# Answers summarise retrieved passages, so heavy reasoning only adds delay (7.5s -> ~3.4s on list questions).
-REASONING_EFFORT = "low"
+# Answers summarise retrieved passages, so reasoning only adds delay: "low" already used 0 reasoning
+# tokens, and "none" brings the first words from ~1.0s to ~0.65s.
+REASONING_EFFORT = "none"
 MAX_LINKS = 4
 FOLLOW_UP_PATTERN = re.compile(r"^(那|所以|剛剛|還有|再說|可以舉)|這[個些類位]|那位|(?<!其)[他她]|它們|哪些例子")
 FALLBACK = {
@@ -78,6 +79,53 @@ def _result(answer: str, sources: list[Source], mode: str, follow_ups=()) -> dic
     }
 
 
+class _AnswerText:
+    """Read the "answer" string out of the model's JSON while it is still being written.
+
+    The schema puts "answer" first, so the reply starts with {"answer":"…; each call to feed()
+    returns the newly completed characters of that string.
+    """
+
+    START = re.compile(r'\{\s*"answer"\s*:\s*"')
+    # An escape cut off at the end of a chunk (\, \u00…) or half of a surrogate pair waits for the next chunk.
+    UNFINISHED = re.compile(r'(?:\\u[dD][89abAB][0-9a-fA-F]{2})?(?:\\(?:u[0-9a-fA-F]{0,3})?)?$')
+
+    def __init__(self):
+        self.raw = ""
+        self.start = None
+        self.sent = 0
+        self.closed = False
+
+    def feed(self, chunk: str) -> str:
+        self.raw += chunk
+        if self.closed:
+            return ""
+        if self.start is None:
+            match = self.START.match(self.raw)
+            if not match:
+                return ""
+            self.start = match.end()
+        body = self.raw[self.start:]
+        index = 0
+        while index < len(body):
+            if body[index] == "\\":
+                index += 2
+            elif body[index] == '"':
+                body, self.closed = body[:index], True
+                break
+            else:
+                index += 1
+        if not self.closed:
+            body = self.UNFINISHED.sub("", body)
+        try:
+            text = json.loads(f'"{body}"')
+        except ValueError:
+            return ""
+        new = text[self.sent:]
+        self.sent = len(text)
+        return new
+
+
 class DepartmentAssistant:
     def __init__(self, client=None):
         self.client = client
@@ -104,6 +152,14 @@ class DepartmentAssistant:
             return question  # Cross-language embeddings still find related passages, just less precisely.
 
     def answer(self, question: str, history=(), lang: str = "zh") -> dict:
+        """The whole answer at once (used by /api/ask)."""
+        result = None
+        for event in self.answer_stream(question, history, lang):
+            result = event.get("result", result)
+        return result
+
+    def answer_stream(self, question: str, history=(), lang: str = "zh"):
+        """Yield {"delta": text} while the answer is written, then {"result": …} with links and follow-ups."""
         search_query = question
         if lang == "en" and self.client is not None:
             search_query = self._chinese_query(question, history)
@@ -111,10 +167,11 @@ class DepartmentAssistant:
             previous = history[-1]
             search_query = f"{question}\n前一題：{previous['question']}\n前一則回答：{previous['answer'][:350]}"
         if self.index is None:
-            return self._preview(search_query, lang)
+            yield {"result": self._preview(search_query, lang)}
+            return
 
         sources = self.index.search(search_query)
-        response = self.client.responses.create(
+        stream = self.client.responses.create(
             model=MODEL,
             instructions=SYSTEM_PROMPT + (ENGLISH_RULE if lang == "en" else ""),
             input=json.dumps({
@@ -133,10 +190,21 @@ class DepartmentAssistant:
                 "schema": ANSWER_SCHEMA,
             }},
             store=False,
+            stream=True,
         )
-        if response.status == "incomplete" or not response.output_text:
-            raise RuntimeError(f"The model did not return a complete answer ({response.status}).")
-        data = json.loads(response.output_text)
+        reader = _AnswerText()
+        response = None
+        for event in stream:
+            if event.type == "response.output_text.delta":
+                text = reader.feed(event.delta)
+                if text:
+                    yield {"delta": text}
+            elif event.type in ("response.completed", "response.incomplete", "response.failed"):
+                response = event.response
+        if response is None or response.status != "completed" or not reader.raw:
+            status = response.status if response is not None else "no response"
+            raise RuntimeError(f"The model did not return a complete answer ({status}).")
+        data = json.loads(reader.raw)
         by_id = {item.id: item for item in sources}
         cited = [by_id[key] for key in dict.fromkeys(data["link_ids"]) if key in by_id][:2]
         if any(word in search_query for word in ("招生", "申請入學", "備審", "報名", "繳件", "甄試")):
@@ -150,7 +218,7 @@ class DepartmentAssistant:
                 seen.add(candidate)
             if len(follow_ups) == 2:
                 break
-        return _result(data["answer"], cited, "api", follow_ups)
+        yield {"result": _result(data["answer"], cited, "api", follow_ups)}
 
     def _preview(self, question: str, lang: str = "zh") -> dict:
         hits = preview_search(question, self.sources, limit=1)

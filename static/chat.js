@@ -199,13 +199,44 @@ form.addEventListener("submit", async event => {
   messages.scrollTop = messages.scrollHeight;
 
   try {
-    const response = await fetch("/api/ask", {
+    // The answer streams in as JSON lines: {"delta": "…"} while it is written, then {"result": {…}}.
+    const response = await fetch("/api/ask/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, history: history.slice(-3), lang: UI.lang }),
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = "";
+    let written = "";
+    let result = null;
+    const handle = line => {
+      if (!line.trim()) return;
+      const event = JSON.parse(line);
+      if (event.error) throw new Error(event.error);
+      if (event.delta) {
+        if (!written) {
+          clearTimeout(waiting);
+          reply.article.classList.remove("pending");
+          reply.article.classList.add("streaming");
+        }
+        written += event.delta;
+        reply.paragraph.textContent = written;
+      }
+      if (event.result) result = event.result;
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      buffered += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const lines = buffered.split("\n");
+      buffered = lines.pop();
+      lines.forEach(handle);
+      if (done) break;
+    }
+    handle(buffered);
+    if (!result) throw new Error(UI.offline);
+    reply.article.classList.remove("streaming");
     history.push({ question, answer: Array.from(result.answer).slice(0, 1000).join("") });
     if (history.length > 3) history.shift();
     reply.paragraph.textContent = result.answer;
@@ -249,7 +280,7 @@ form.addEventListener("submit", async event => {
     clearTimeout(waiting);
     reply.paragraph.removeAttribute("role");
     send.disabled = false;
-    reply.article.classList.remove("pending");
+    reply.article.classList.remove("pending", "streaming");
     for (const button of examples) button.disabled = false;
     messages.scrollTop = reply.article.offsetTop;
   }

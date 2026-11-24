@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, Request, jsonify, make_response, render_template, request
+from flask import Flask, Request, Response, jsonify, make_response, render_template, request
 
 from assistant_service import DepartmentAssistant
 from transcription import AUDIO_FORMATS, MAX_AUDIO_BYTES, transcribe
@@ -127,16 +127,16 @@ def create_app(assistant=None, feedback_file: Path = FEEDBACK_FILE):
             page.set_cookie("lang", lang, max_age=365 * 24 * 3600, samesite="Lax")
         return page
 
-    @app.post("/api/ask")
-    def ask():
+    def read_question():
+        """(question, recent turns) from the request body, or an error response."""
         data = request.get_json(silent=True)
         errors = ERRORS[request_lang()]
         question = data.get("question") if isinstance(data, dict) else None
         if not isinstance(question, str) or not 1 <= len(question.strip()) <= 400:
-            return jsonify(error=errors["question_length"]), 400
+            return None, (jsonify(error=errors["question_length"]), 400)
         history = data.get("history", [])
         if not isinstance(history, list) or len(history) > MAX_HISTORY_TURNS:
-            return jsonify(error=errors["history_format"]), 400
+            return None, (jsonify(error=errors["history_format"]), 400)
         for turn in history:
             if (
                 not isinstance(turn, dict)
@@ -145,13 +145,38 @@ def create_app(assistant=None, feedback_file: Path = FEEDBACK_FILE):
                 or not 1 <= len(turn["question"].strip()) <= 400
                 or not 1 <= len(turn["answer"].strip()) <= MAX_HISTORY_ANSWER
             ):
-                return jsonify(error=errors["history_format"]), 400
+                return None, (jsonify(error=errors["history_format"]), 400)
+        context = [{"question": turn["question"], "answer": turn["answer"]} for turn in history]
+        return (question.strip(), context), None
+
+    @app.post("/api/ask")
+    def ask():
+        parsed, error = read_question()
+        if error:
+            return error
         try:
-            context = [{"question": turn["question"], "answer": turn["answer"]} for turn in history]
-            return jsonify(assistant.answer(question.strip(), context, request_lang()))
-        except Exception as error:
-            app.logger.warning("Question processing failed (%s)", type(error).__name__)
-            return jsonify(error=errors["answer_failed"]), 503
+            return jsonify(assistant.answer(*parsed, request_lang()))
+        except Exception as failure:
+            app.logger.warning("Question processing failed (%s)", type(failure).__name__)
+            return jsonify(error=ERRORS[request_lang()]["answer_failed"]), 503
+
+    @app.post("/api/ask/stream")
+    def ask_stream():
+        """The answer as it is written: one JSON object per line ({"delta"}…, then {"result"} or {"error"})."""
+        parsed, error = read_question()
+        if error:
+            return error
+        lang = request_lang()
+
+        def lines():
+            try:
+                for event in assistant.answer_stream(*parsed, lang):
+                    yield json.dumps(event, ensure_ascii=False) + "\n"
+            except Exception as failure:
+                app.logger.warning("Question processing failed (%s)", type(failure).__name__)
+                yield json.dumps({"error": ERRORS[lang]["answer_failed"]}, ensure_ascii=False) + "\n"
+
+        return Response(lines(), mimetype="application/x-ndjson", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
     @app.post("/api/feedback")
     def feedback():

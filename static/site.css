@@ -590,6 +590,18 @@ body:has(.chat.has-messages) main {
 .sources-label { display: block; margin-top: 12px; color: var(--muted); font-size: .8125rem; }
 .message a { display: inline-block; margin: 7px 12px 0 0; color: var(--accent); text-underline-offset: .2em; overflow-wrap: anywhere; }
 .pending p { color: var(--muted); }
+/* A blinking caret after the text while the answer is still arriving. */
+.streaming p::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -.15em;
+  background: var(--accent);
+  animation: caret 1s steps(2, start) infinite;
+}
+@keyframes caret { to { visibility: hidden; } }
 .pending .avatar { animation: pulse 1.4s ease-in-out infinite alternate; }
 .error p { color: #9a234a; }
 .feedback { display: flex; align-items: center; gap: 6px; margin-top: 12px; color: var(--muted); font-size: .8125rem; }
