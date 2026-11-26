@@ -14,10 +14,11 @@ LIST_WORDS = ("哪些", "有誰", "哪幾", "列出", "所有", "全部", "名�
 GENERIC_TRIGRAMS = {"資料科", "料科學", "學年度", "必修科", "選修科", "修科目", "哪些課", "的課程"}
 COURSE_YEAR = re.compile(r"(\d{3})學年度入學")
 COURSE_PROGRAM = re.compile(r"(學士班|碩士班|碩士在職專班)｜\d{3}學年度入學")
+TEACH_VERB = re.compile(r"教授(?=哪些|什麼|課|內容|的課)")
 # Topic words, as patterns: 「教授哪些課程」 uses 教授 as "to teach", so it does not ask for the list of professors.
 LIST_PAGES = {
     "跨域實驗室": re.compile(r"實驗室"),
-    "專任師資": re.compile(r"老師|師資|教授(?!哪些|什麼|課|內容|的課)"),
+    "專任師資": re.compile(r"老師|師資|教授"),
     "競賽成果": re.compile(r"競賽|比賽|得獎"),
 }
 
@@ -141,6 +142,8 @@ class VectorSearch:
         return asked or ({max(available)} if available else set())
 
     def search(self, question: str, limit: int = 6) -> list[Source]:
+        # 「教授什麼／哪些課」 means "teach"; written as 教, it no longer pulls in the professors' profiles.
+        question = TEACH_VERB.sub("教", question)
         if any(word in question for word in LIST_WORDS):
             for page, topics in LIST_PAGES.items():
                 if topics.search(question):
