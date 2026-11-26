@@ -14,7 +14,12 @@ LIST_WORDS = ("哪些", "有誰", "哪幾", "列出", "所有", "全部", "名�
 GENERIC_TRIGRAMS = {"資料科", "料科學", "學年度", "必修科", "選修科", "修科目", "哪些課", "的課程"}
 COURSE_YEAR = re.compile(r"(\d{3})學年度入學")
 COURSE_PROGRAM = re.compile(r"(學士班|碩士班|碩士在職專班)｜\d{3}學年度入學")
-LIST_PAGES = {"跨域實驗室": ("實驗室",), "專任師資": ("老師", "師資", "教授"), "競賽成果": ("競賽", "比賽", "得獎")}
+# Topic words, as patterns: 「教授哪些課程」 uses 教授 as "to teach", so it does not ask for the list of professors.
+LIST_PAGES = {
+    "跨域實驗室": re.compile(r"實驗室"),
+    "專任師資": re.compile(r"老師|師資|教授(?!哪些|什麼|課|內容|的課)"),
+    "競賽成果": re.compile(r"競賽|比賽|得獎"),
+}
 
 
 def terms(text: str) -> set[str]:
@@ -138,7 +143,7 @@ class VectorSearch:
     def search(self, question: str, limit: int = 6) -> list[Source]:
         if any(word in question for word in LIST_WORDS):
             for page, topics in LIST_PAGES.items():
-                if any(topic in question for topic in topics):
+                if topics.search(question):
                     listed = [item for item in self.sources.values() if item.page == page]
                     if listed:
                         return listed
